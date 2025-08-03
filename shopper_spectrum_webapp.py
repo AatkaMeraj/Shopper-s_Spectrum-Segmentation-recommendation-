@@ -122,3 +122,4 @@ elif page == "Product Recommendation":
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
 
+
