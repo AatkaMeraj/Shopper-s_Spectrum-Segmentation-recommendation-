@@ -3,32 +3,30 @@ import pandas as pd
 import pickle
 import requests
 import os
+import gdown
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
+# ----------------------------------------
 # Page Config
-
+# ----------------------------------------
 st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="wide")
 
-# File Download Function
-
+# ----------------------------------------
+# Function to Download from Google Drive
+# ----------------------------------------
 @st.cache_resource
-def load_pickle_from_gdrive(file_id: str, filename: str):
+def load_pickle_from_gdrive_gdown(file_id: str, filename: str):
     if not os.path.exists(filename):
-        url = f"https://drive.google.com/uc?export=download&id={file_id}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(filename, 'wb') as f:
-                f.write(response.content)
-        else:
-            raise Exception(f"Failed to download file: {filename}")
+        url = f"https://drive.google.com/uc?id={file_id}"
+        gdown.download(url, filename, quiet=True)
     
     with open(filename, 'rb') as f:
         return pickle.load(f)
 
-
+# ----------------------------------------
 # Google Drive File IDs
-
+# ----------------------------------------
 FILE_IDS = {
     "kmeans_model.pkl": "16xyOUF8GPwl8R2NU-0JSKHFxiOKJ_BbZ",
     "scaler.pkl": "1edsz2jUstqY-vGW5hAgO_n5uQOzXGExY", 
@@ -37,17 +35,18 @@ FILE_IDS = {
     "item_sim_df.pkl": "1Ksx1ve8fC9xVRfhasF_4Dg9EySohx0BL",
 }
 
-# load files
+# ----------------------------------------
+# Load Pickle Files
+# ----------------------------------------
 try:
-    kmeans = load_pickle_from_gdrive(FILE_IDS["kmeans_model.pkl"], "kmeans_model.pkl")
-    scaler = load_pickle_from_gdrive(FILE_IDS["scaler.pkl"], "scaler.pkl")
-    user_item_matrix = load_pickle_from_gdrive(FILE_IDS["user_item_matrix.pkl"], "user_item_matrix.pkl")
-    user_sim_df = load_pickle_from_gdrive(FILE_IDS["user_sim_df.pkl"], "user_sim_df.pkl")
-    item_sim_df = load_pickle_from_gdrive(FILE_IDS["item_sim_df.pkl"], "item_sim_df.pkl")
+    kmeans = load_pickle_from_gdrive_gdown(FILE_IDS["kmeans_model.pkl"], "kmeans_model.pkl")
+    scaler = load_pickle_from_gdrive_gdown(FILE_IDS["scaler.pkl"], "scaler.pkl")
+    user_item_matrix = load_pickle_from_gdrive_gdown(FILE_IDS["user_item_matrix.pkl"], "user_item_matrix.pkl")
+    user_sim_df = load_pickle_from_gdrive_gdown(FILE_IDS["user_sim_df.pkl"], "user_sim_df.pkl")
+    item_sim_df = load_pickle_from_gdrive_gdown(FILE_IDS["item_sim_df.pkl"], "item_sim_df.pkl")
 except Exception as e:
-    st.error("❌ Failed to load required files.")
+    st.error(f"❌ Failed to load files: {e}")
     st.stop()
-
 
 # ----------- Segment Prediction ----------- #
 def predict_segment(r, f, m, customer_id):
@@ -127,6 +126,7 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
+
 
 
 
