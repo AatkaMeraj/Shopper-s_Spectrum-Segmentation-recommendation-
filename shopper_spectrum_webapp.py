@@ -32,18 +32,8 @@ def download_and_load_pickle(file_id, filename):
             # Use fuzzy=True to handle "Google virus scan warning" page
             gdown.download(url, filename, quiet=False, fuzzy=True)
         except Exception as e:
-            raise Exception(f"❌ Failed to download {filename}: {e}")
+            raise Exception(f"Failed to download {filename}: {e}")
     
-    # Ensure it's not an HTML file
-    with open(filename, "rb") as f:
-        head = f.read(1)
-        if head == b"<":
-            raise Exception(
-                f"❌ Error: {filename} is not a pickle file. Likely an HTML download (check file ID & access)."
-            )
-        f.seek(0)
-        return pickle.load(f)
-
 
 # --------- Try Loading Files --------- #
 try:
@@ -136,6 +126,7 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
+
 
 
 
