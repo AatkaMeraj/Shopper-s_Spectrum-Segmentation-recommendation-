@@ -1,22 +1,47 @@
 import streamlit as st
 import pandas as pd
 import pickle
+import requests
+import os
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="wide")
 
+# Function to download and cache a pickle file from Google Drive
 @st.cache_resource
-def load_pickle(path):
-    with open(path, 'rb') as f:
+def load_pickle_from_gdrive(file_id, filename):
+    if not os.path.exists(filename):
+        url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(filename, 'wb') as f:
+                f.write(response.content)
+        else:
+            raise Exception(f"Failed to download file from Google Drive: {filename}")
+    
+    with open(filename, 'rb') as f:
         return pickle.load(f)
 
+FILE_IDS = {
+    "kmeans_model.pkl": "16xyOUF8GPwl8R2NU-0JSKHFxiOKJ_BbZ",
+    "scaler.pkl": "1edsz2jUstqY-vGW5hAgO_n5uQOzXGExY", 
+    "user_item_matrix.pkl": "14LL-3Pw1AHLJgvB4YNaZaUOCuW3R83Fz",
+    "user_sim_df.pkl": "1azW9ip00mg01na-VLyf7de0dYvehtow7",
+    "item_sim_df.pkl": "1Ksx1ve8fC9xVRfhasF_4Dg9EySohx0BL",
+}
 
-kmeans = load_pickle("kmeans_model.pkl")
-scaler = load_pickle("scaler.pkl")
-user_item_matrix = load_pickle("user_item_matrix.pkl")
-user_sim_df = load_pickle("user_sim_df.pkl")
-item_sim_df = load_pickle("item_sim_df.pkl")
+# Load all files silently
+try:
+    kmeans = load_pickle_from_gdrive(FILE_IDS["kmeans_model.pkl"], "kmeans_model.pkl")
+    scaler = load_pickle_from_gdrive(FILE_IDS["scaler.pkl"], "scaler.pkl")
+    user_item_matrix = load_pickle_from_gdrive(FILE_IDS["user_item_matrix.pkl"], "user_item_matrix.pkl")
+    user_sim_df = load_pickle_from_gdrive(FILE_IDS["user_sim_df.pkl"], "user_sim_df.pkl")
+    item_sim_df = load_pickle_from_gdrive(FILE_IDS["item_sim_df.pkl"], "item_sim_df.pkl")
+except Exception as e:
+    st.error(" Failed to load required files.")
+    st.stop()
+
 
 # ----------- Segment Prediction ----------- #
 def predict_segment(r, f, m, customer_id):
@@ -96,3 +121,4 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
+
