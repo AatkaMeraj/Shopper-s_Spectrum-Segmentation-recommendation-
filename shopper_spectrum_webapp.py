@@ -18,20 +18,19 @@ FILE_IDS = {
     "item_sim_df.pkl": "1Ksx1ve8fC9xVRfhasF_4Dg9EySohx0BL",
 }
 
-# --------- Utility to Download and Load Pickle Files --------- #
-@st.cache_resource
-def download_and_load_pickle(file_id, filename):
-    if not os.path.exists(filename):
-        try:
-            gdown.download(f"https://drive.google.com/uc?id={file_id}", filename, quiet=False)
-        except Exception as e:
-            raise Exception(f"Download failed: {e}")
 
-    try:
-        with open(filename, "rb") as f:
-            return pickle.load(f)
-    except Exception as e:
-        raise Exception(f"Error loading pickle file '{filename}': {e}")
+
+def download_and_load_pickle(file_id: str, filename: str):
+    url = f"https://drive.google.com/uc?id={file_id}"
+
+    if not os.path.exists(filename):
+        gdown.download(url, filename, quiet=False)
+    
+    with open(filename, "rb") as f:
+        return pickle.load(f)
+
+
+
 
 # --------- Try Loading Files --------- #
 try:
@@ -122,6 +121,7 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
+
 
 
 
