@@ -11,6 +11,11 @@ st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="
 
 # --------- File IDs and Filenames --------- #
 
+import os
+import pickle
+import gdown
+
+# Set to your own Google Drive file IDs
 FILE_IDS = {
     "kmeans_model.pkl": "16xyOUF8GPwl8R2NU-0JSKHFxiOKJ_BbZ",
     "scaler.pkl": "1edsz2jUstqY-vGW5hAgO_n5uQOzXGExY",
@@ -19,16 +24,22 @@ FILE_IDS = {
     "item_sim_df.pkl": "1Ksx1ve8fC9xVRfhasF_4Dg9EySohx0BL",
 }
 
-# --------- Function to Download & Load Pickle --------- #
-def download_and_load_pickle(file_id: str, filename: str):
-    gdown_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-
+# Function to download and safely load .pkl files
+def download_and_load_pickle(file_id, filename):
     if not os.path.exists(filename):
-        gdown.download(gdown_url, filename, quiet=False)
-    
-    with open(filename, "rb") as f:
-        return pickle.load(f)
+        url = f"https://drive.google.com/uc?id={file_id}"
+        try:
+            gdown.download(url, filename, quiet=False)
+        except Exception as e:
+            raise Exception(f"❌ Failed to download {filename}: {e}")
 
+    # Confirm file is binary .pkl and not HTML
+    with open(filename, "rb") as f:
+        head = f.read(1)
+        if head == b"<":
+            raise Exception(f"❌ Error: {filename} is not a pickle file. Likely an HTML download (check file ID & access).")
+        f.seek(0)
+        return pickle.load(f)
 
 # --------- Try Loading Files --------- #
 try:
@@ -121,5 +132,6 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
+
 
 
