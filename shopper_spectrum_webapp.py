@@ -1,0 +1,103 @@
+import streamlit as st
+st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="wide")
+
+import streamlit as st
+import pandas as pd
+import pickle
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
+# Load models 
+@st.cache_data
+def load_pickle(path):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
+# Load segmentation model and scaler 
+kmeans = load_pickle("kmeans_model.pkl")
+scaler = load_pickle("scaler.pkl")
+
+# Load collaborative filtering data
+user_item_matrix = load_pickle("user_item_matrix.pkl")
+user_sim_df = load_pickle("user_sim_df.pkl")
+item_sim_df = load_pickle("item_sim_df.pkl")
+
+# Prediction Functions 
+def predict_segment(r, f, m, customer_id):
+    dummy_customer_id = 99999
+    data = scaler.transform([[r, f, m, dummy_customer_id]])
+    
+    segment = kmeans.predict(data)[0]
+    labels = {
+        0: "Loyal Customer",
+        1: "Occasional Customer",
+        2: "Lost Customer",
+        3: "Big Spender",
+    }
+    return segment, labels.get(segment, "Unknown")
+
+ 
+def predict_user_user(customer_id, product_desc):
+    if product_desc not in user_item_matrix.columns:
+        return None
+    sim_scores = user_sim_df[customer_id]
+    item_ratings = user_item_matrix[product_desc]
+    mask = (item_ratings > 0) & (user_item_matrix.index != customer_id)
+    if not mask.any():
+        return None
+    numerator = (sim_scores[mask] * item_ratings[mask]).sum()
+    denominator = sim_scores[mask].sum()
+    return numerator / denominator if denominator != 0 else None
+
+def predict_item_item(customer_id, product_desc):
+    if product_desc not in user_item_matrix.columns:
+        return None
+    user_ratings = user_item_matrix.loc[customer_id]
+    sim_scores = item_sim_df[product_desc]
+    mask = (user_ratings > 0) & (user_item_matrix.columns != product_desc)
+    if not mask.any():
+        return None
+    numerator = (sim_scores[mask] * user_ratings[mask]).sum()
+    denominator = sim_scores[mask].sum()
+    return numerator / denominator if denominator != 0 else None
+
+# Sidebar Navigation
+page = st.sidebar.radio("Select Page",["Home", "Customer Segmentation", "Product Recommendation"])
+
+#  Pages 
+
+if page == "Home":
+    st.title("🛒 Shopper's Spectrum Dashboard")
+    st.markdown("Welcome! Use the sidebar to explore segmentation and product recommendation features.")
+
+elif page == "Customer Segmentation":
+    st.title("Customer Segmentation")
+    st.markdown("Enter customer RFM values to predict segment.")
+
+    recency = st.number_input("Recency (days since last purchase)", min_value=0, value=325)
+    frequency = st.number_input("Frequency (number of purchases)", min_value=0, value=1)
+    monetary = st.number_input("Monetary (total spend)", min_value=0.0, value=765322.0)
+
+    if st.button("Predict Segment"):
+        seg_id, label = predict_segment(recency, frequency, monetary, customer_id=99999)
+        st.success(f"Cluster No: {seg_id}")
+        st.write(f"This customer belongs to: **{label}**")
+
+elif page == "Product Recommendation":
+    st.title("Product Recommendation")
+    st.markdown("Select a product to get similar product recommendations based on Collaborative Filtering.")
+
+    selected_product = st.selectbox("Select a Product", user_item_matrix.columns)
+    top_n = st.slider("Number of Recommendations", 3, 15, 5)
+
+    if st.button("Generate Recommendations"):
+        if selected_product not in item_sim_df.columns:
+            st.warning("Selected product not found in similarity data.")
+        else:
+            # Get similarity scores for the selected product
+            sim_scores = item_sim_df[selected_product].drop(selected_product)  # Exclude self
+            top_similar = sim_scores.sort_values(ascending=False).head(top_n)
+
+            st.subheader(f"Top {top_n} products similar to '{selected_product}':")
+            for i, (prod, score) in enumerate(top_similar.items(), 1):
+                st.write(f"{i}. {prod} ")
