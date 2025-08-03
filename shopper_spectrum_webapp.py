@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="wide")
 
 # --------- File IDs and Filenames --------- #
+
 FILE_IDS = {
     "kmeans_model.pkl": "16xyOUF8GPwl8R2NU-0JSKHFxiOKJ_BbZ",
     "scaler.pkl": "1edsz2jUstqY-vGW5hAgO_n5uQOzXGExY",
@@ -18,18 +19,15 @@ FILE_IDS = {
     "item_sim_df.pkl": "1Ksx1ve8fC9xVRfhasF_4Dg9EySohx0BL",
 }
 
-
-
+# --------- Function to Download & Load Pickle --------- #
 def download_and_load_pickle(file_id: str, filename: str):
-    url = f"https://drive.google.com/uc?id={file_id}"
+    gdown_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
     if not os.path.exists(filename):
-        gdown.download(url, filename, quiet=False)
+        gdown.download(gdown_url, filename, quiet=False)
     
     with open(filename, "rb") as f:
         return pickle.load(f)
-
-
 
 
 # --------- Try Loading Files --------- #
@@ -39,10 +37,12 @@ try:
     user_item_matrix = download_and_load_pickle(FILE_IDS["user_item_matrix.pkl"], "user_item_matrix.pkl")
     user_sim_df = download_and_load_pickle(FILE_IDS["user_sim_df.pkl"], "user_sim_df.pkl")
     item_sim_df = download_and_load_pickle(FILE_IDS["item_sim_df.pkl"], "item_sim_df.pkl")
+    
 except Exception as e:
-    st.error("❌ Failed to load files:")
+    st.error("Failed to load files:")
     st.exception(e)
     st.stop()
+    
 # ----------- Segment Prediction ----------- #
 def predict_segment(r, f, m, customer_id):
     dummy_customer_id = 99999
@@ -121,10 +121,5 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
-
-
-
-
-
 
 
