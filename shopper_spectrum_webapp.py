@@ -6,11 +6,14 @@ import os
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
+# Page Config
+
 st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="wide")
 
-# Function to download and cache a pickle file from Google Drive
+# File Download Function
+
 @st.cache_resource
-def load_pickle_from_gdrive(file_id, filename):
+def load_pickle_from_gdrive(file_id: str, filename: str):
     if not os.path.exists(filename):
         url = f"https://drive.google.com/uc?export=download&id={file_id}"
         response = requests.get(url)
@@ -18,10 +21,13 @@ def load_pickle_from_gdrive(file_id, filename):
             with open(filename, 'wb') as f:
                 f.write(response.content)
         else:
-            raise Exception(f"Failed to download file from Google Drive: {filename}")
+            raise Exception(f"Failed to download file: {filename}")
     
     with open(filename, 'rb') as f:
         return pickle.load(f)
+
+
+# Google Drive File IDs
 
 FILE_IDS = {
     "kmeans_model.pkl": "16xyOUF8GPwl8R2NU-0JSKHFxiOKJ_BbZ",
@@ -31,7 +37,7 @@ FILE_IDS = {
     "item_sim_df.pkl": "1Ksx1ve8fC9xVRfhasF_4Dg9EySohx0BL",
 }
 
-# Load all files silently
+# load files
 try:
     kmeans = load_pickle_from_gdrive(FILE_IDS["kmeans_model.pkl"], "kmeans_model.pkl")
     scaler = load_pickle_from_gdrive(FILE_IDS["scaler.pkl"], "scaler.pkl")
@@ -39,8 +45,7 @@ try:
     user_sim_df = load_pickle_from_gdrive(FILE_IDS["user_sim_df.pkl"], "user_sim_df.pkl")
     item_sim_df = load_pickle_from_gdrive(FILE_IDS["item_sim_df.pkl"], "item_sim_df.pkl")
 except Exception as e:
-    st.error(" Failed to load required files.")
-    st.exception(e) 
+    st.error("❌ Failed to load required files.")
     st.stop()
 
 
@@ -122,6 +127,7 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
+
 
 
 
