@@ -1,32 +1,27 @@
 import streamlit as st
-st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="wide")
-
-import streamlit as st
 import pandas as pd
 import pickle
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
-# Load models 
-@st.cache_data
+st.set_page_config(page_title="Customer Segmentation & Recommendation", layout="wide")
+
+@st.cache_resource
 def load_pickle(path):
     with open(path, 'rb') as f:
         return pickle.load(f)
 
-# Load segmentation model and scaler 
+
 kmeans = load_pickle("kmeans_model.pkl")
 scaler = load_pickle("scaler.pkl")
-
-# Load collaborative filtering data
 user_item_matrix = load_pickle("user_item_matrix.pkl")
 user_sim_df = load_pickle("user_sim_df.pkl")
 item_sim_df = load_pickle("item_sim_df.pkl")
 
-# Prediction Functions 
+# ----------- Segment Prediction ----------- #
 def predict_segment(r, f, m, customer_id):
     dummy_customer_id = 99999
     data = scaler.transform([[r, f, m, dummy_customer_id]])
-    
     segment = kmeans.predict(data)[0]
     labels = {
         0: "Loyal Customer",
@@ -36,7 +31,7 @@ def predict_segment(r, f, m, customer_id):
     }
     return segment, labels.get(segment, "Unknown")
 
- 
+# ----------- Recommendation Functions ----------- #
 def predict_user_user(customer_id, product_desc):
     if product_desc not in user_item_matrix.columns:
         return None
@@ -61,15 +56,15 @@ def predict_item_item(customer_id, product_desc):
     denominator = sim_scores[mask].sum()
     return numerator / denominator if denominator != 0 else None
 
-# Sidebar Navigation
-page = st.sidebar.radio("Select Page",["Home", "Customer Segmentation", "Product Recommendation"])
+# ----------- UI: Page Navigation ----------- #
+page = st.sidebar.radio("Select Page", ["Home", "Customer Segmentation", "Product Recommendation"])
 
-#  Pages 
-
+# ----------- Home Page ----------- #
 if page == "Home":
     st.title("🛒 Shopper's Spectrum Dashboard")
     st.markdown("Welcome! Use the sidebar to explore segmentation and product recommendation features.")
 
+# ----------- Customer Segmentation Page ----------- #
 elif page == "Customer Segmentation":
     st.title("Customer Segmentation")
     st.markdown("Enter customer RFM values to predict segment.")
@@ -83,6 +78,7 @@ elif page == "Customer Segmentation":
         st.success(f"Cluster No: {seg_id}")
         st.write(f"This customer belongs to: **{label}**")
 
+# ----------- Product Recommendation Page ----------- #
 elif page == "Product Recommendation":
     st.title("Product Recommendation")
     st.markdown("Select a product to get similar product recommendations based on Collaborative Filtering.")
@@ -94,10 +90,9 @@ elif page == "Product Recommendation":
         if selected_product not in item_sim_df.columns:
             st.warning("Selected product not found in similarity data.")
         else:
-            # Get similarity scores for the selected product
             sim_scores = item_sim_df[selected_product].drop(selected_product)  # Exclude self
             top_similar = sim_scores.sort_values(ascending=False).head(top_n)
 
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
-                st.write(f"{i}. {prod} ")
+                st.write(f"{i}. {prod}")
