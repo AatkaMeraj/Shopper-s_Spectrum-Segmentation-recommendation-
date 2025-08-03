@@ -40,6 +40,7 @@ try:
     item_sim_df = load_pickle_from_gdrive(FILE_IDS["item_sim_df.pkl"], "item_sim_df.pkl")
 except Exception as e:
     st.error(" Failed to load required files.")
+    st.exception(e) 
     st.stop()
 
 
@@ -121,5 +122,6 @@ elif page == "Product Recommendation":
             st.subheader(f"Top {top_n} products similar to '{selected_product}':")
             for i, (prod, score) in enumerate(top_similar.items(), 1):
                 st.write(f"{i}. {prod}")
+
 
 
